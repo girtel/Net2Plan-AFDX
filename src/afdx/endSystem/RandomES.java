@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import afdx.AFDXParameters;
-
 import com.net2plan.interfaces.networkDesign.IAlgorithm;
 import com.net2plan.interfaces.networkDesign.NetPlan;
 import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.utils.Triple;
+
+import afdx.afdx.AFDXParameters;
 
 public class RandomES implements IAlgorithm {
 

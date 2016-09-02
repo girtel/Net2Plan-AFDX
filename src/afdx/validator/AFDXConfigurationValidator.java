@@ -12,9 +12,9 @@ import com.net2plan.interfaces.networkDesign.NetPlan;
 import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.interfaces.networkDesign.Route;
 
-import afdx.AFDXParameters;
-import afdx.AFDXTools;
-import afdx.VL;
+import afdx.afdx.AFDXParameters;
+import afdx.afdx.AFDXTools;
+import afdx.afdx.VL;
 
 public class AFDXConfigurationValidator {
 	public boolean AFDXValidation(NetPlan netPlan) {

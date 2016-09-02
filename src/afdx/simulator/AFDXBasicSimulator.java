@@ -19,10 +19,10 @@ import com.net2plan.interfaces.simulation.SimEvent;
 import com.net2plan.utils.InputParameter;
 import com.net2plan.utils.Triple;
 
-import afdx.AFDXParameters;
-import afdx.AFDXTools;
-import afdx.Packet;
-import afdx.VL;
+import afdx.afdx.AFDXParameters;
+import afdx.afdx.AFDXTools;
+import afdx.afdx.Packet;
+import afdx.afdx.VL;
 import cern.jet.random.Exponential;
 
 public class AFDXBasicSimulator extends IEventGenerator {

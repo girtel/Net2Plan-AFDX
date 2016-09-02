@@ -9,13 +9,13 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import afdx.AFDXParameters;
-
 import com.net2plan.interfaces.networkDesign.IAlgorithm;
 import com.net2plan.interfaces.networkDesign.NetPlan;
 import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.utils.InputParameter;
 import com.net2plan.utils.Triple;
+
+import afdx.afdx.AFDXParameters;
 
 public class FileTopologyLoad implements IAlgorithm {
 	private InputParameter fileName = new InputParameter(AFDXParameters.SIM_FILE_NAME, "", "");

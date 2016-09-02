@@ -3,12 +3,12 @@ package afdx.topology;
 import java.util.List;
 import java.util.Map;
 
-import afdx.AFDXParameters;
-
 import com.net2plan.interfaces.networkDesign.IAlgorithm;
 import com.net2plan.interfaces.networkDesign.NetPlan;
 import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.utils.Triple;
+
+import afdx.afdx.AFDXParameters;
 
 ;
 

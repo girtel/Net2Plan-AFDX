@@ -19,7 +19,7 @@ import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.utils.InputParameter;
 import com.net2plan.utils.Triple;
 
-import afdx.AFDXParameters;
+import afdx.afdx.AFDXParameters;
 
 public class FileVLLoad implements IAlgorithm {
 	private InputParameter fileName = new InputParameter(AFDXParameters.SIM_FILE_NAME, "", "");

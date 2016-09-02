@@ -16,10 +16,10 @@ import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.interfaces.networkDesign.Route;
 import com.net2plan.utils.Triple;
 
-import afdx.AFDXParameters;
-import afdx.AFDXTools;
-import afdx.VL;
-import afdx.VLLatency;
+import afdx.afdx.AFDXParameters;
+import afdx.afdx.AFDXTools;
+import afdx.afdx.VL;
+import afdx.afdx.VLLatency;
 import afdx.algorithm.FIFONCAlgorithm;
 import afdx.algorithm.FIFOTAAlgorithm;
 import afdx.simulator.AFDXBasicSimulator;

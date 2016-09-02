@@ -18,7 +18,7 @@ import com.net2plan.interfaces.networkDesign.NetPlan;
 import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.utils.Triple;
 
-import afdx.AFDXParameters;
+import afdx.afdx.AFDXParameters;
 
 public class A400MVLs implements IAlgorithm {
 
