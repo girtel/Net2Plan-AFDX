@@ -1,7 +1,6 @@
 package afdx.simulator;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -215,20 +214,15 @@ public class AFDXBasicSimulator extends IEventGenerator {
 			final Route route = currentNetPlan.getRoute(routeIndex);
 
 			// simulates the configuration table loading
-			final int lengthBytes = Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
-			final double bagMs = Double.parseDouble(route.getDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
-			final int arrivalType = Integer
-					.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_PERVL_PACKET_ARRIVAL_TYPE));
-			VL vl = new VL(lengthBytes, bagMs, arrivalType);
+			VL vl = new VL(route);
 			VL_routes.add(vl);
 
 			/* generate event for myself to produce next unregulated packet */
-			int packetLength = lengthBytes;
 			double delta = Math.random();
 			if (algorithmParameters.get(AFDXParameters.SIM_PARAM_SYNC_EVENTS).equals("1"))
 				delta = 0;
 			double generationTime = delta / 1000;
-			Packet packet = new Packet(route, vl, generationTime);
+			Packet packet = new Packet(vl, route.getEgressNode(), generationTime);
 			this.scheduleEvent(new SimEvent(generationTime, SimEvent.DestinationModule.EVENT_GENERATOR, 0, packet));
 
 			// reset the next service time for VL at regulators
@@ -250,22 +244,15 @@ public class AFDXBasicSimulator extends IEventGenerator {
 			final MulticastTree tree = currentNetPlan.getMulticastTree(treeIndex);
 
 			// simulates the configuration table loading
-			final int lengthBytes = Integer
-					.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
-			final double bagMs = Double
-					.parseDouble(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
-			final int arrivalType = Integer
-					.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_PERVL_PACKET_ARRIVAL_TYPE));
-			VL vl = new VL(lengthBytes, bagMs, arrivalType);
+			VL vl = new VL(tree);
 			VL_trees.add(vl);
 
 			/* generate event for myself to produce next unregulated packet */
-			int packetLength = lengthBytes;
 			double delta = Math.random();
 			if (algorithmParameters.get(AFDXParameters.SIM_PARAM_SYNC_EVENTS).equals("1"))
 				delta = 0;
 			double generationTime = delta / 1000;
-			Packet packet = new Packet(tree, null, vl, generationTime);
+			Packet packet = new Packet(vl, null, generationTime);
 			this.scheduleEvent(new SimEvent(generationTime, SimEvent.DestinationModule.EVENT_GENERATOR, 0, packet));
 
 			// reset the next service time for VL at regulators
@@ -283,7 +270,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 		Packet packet = (Packet) simEvent.getEventObject();
 
-		if (packet.getMulticastTree() == null) {
+		if (packet.getVl().getTree() == null) {
 			// process a route packet
 			processRoutePacket(packet, simTime);
 		} else {
@@ -295,8 +282,8 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 	private void processRoutePacket(Packet packet, double simTime) {
 		int crossedNodes = packet.getArrivalNodes().size();
-		Route route = packet.getRoute();
-		int routeIndex = packet.getRoute().getIndex();
+		Route route = packet.getVl().getRoute();
+		int routeIndex = packet.getVl().getRoute().getIndex();
 
 		if (!packet.regulated) {
 			// new packet
@@ -328,7 +315,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 			double timeNextPacket = simTime + sampleInterArrivalTime(packet.getVl()) + desviation;
 
-			Packet newPacket = new Packet(packet.getRoute(), packet.getVl(), timeNextPacket);
+			Packet newPacket = new Packet(packet.getVl(), packet.getEgressNode(), timeNextPacket);
 
 			this.scheduleEvent(new SimEvent(timeNextPacket, SimEvent.DestinationModule.EVENT_GENERATOR, 0, newPacket));
 		} else {
@@ -359,7 +346,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 					if (packet.getPreviousLink().getIndex() == testLink)
 						System.out.println("\t" + AFDXTools.df_5.format(simTime * 1000) + " -------->link queue "
 								+ linkQueue.get(packet.getPreviousLink().getIndex()).size() + " Route "
-								+ packet.getRoute().getIndex() + " nextservicetime "
+								+ packet.getVl().getRoute().getIndex() + " nextservicetime "
 								+ linkNextServiceTime.get(packet.getPreviousLink().getIndex()));
 				}
 
@@ -404,8 +391,8 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 	private void processTreePacket(Packet packet, double simTime) {
 		int crossedNodes = packet.getArrivalNodes().size();
-		MulticastTree tree = packet.getMulticastTree();
-		int treeIndex = packet.getMulticastTree().getIndex();
+		MulticastTree tree = packet.getVl().getTree();
+		int treeIndex = packet.getVl().getTree().getIndex();
 
 		if (!packet.regulated) {
 			// new packet
@@ -440,7 +427,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 			double timeNextPacket = simTime + sampleInterArrivalTime(packet.getVl()) + desviation;
 
-			Packet newPacket = new Packet(tree, null, packet.getVl(), timeNextPacket);
+			Packet newPacket = new Packet(packet.getVl(), packet.getEgressNode(), timeNextPacket);
 
 			this.scheduleEvent(new SimEvent(timeNextPacket, SimEvent.DestinationModule.EVENT_GENERATOR, 0, newPacket));
 		} else {
@@ -471,7 +458,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 					if (packet.getPreviousLink().getIndex() == testLink)
 						System.out.println("\t" + AFDXTools.df_5.format(simTime * 1000) + " -------->link queue "
 								+ linkQueue.get(packet.getPreviousLink().getIndex()).size() + " Tree "
-								+ packet.getMulticastTree().getIndex() + " nextservicetime "
+								+ packet.getVl().getTree().getIndex() + " nextservicetime "
 								+ linkNextServiceTime.get(packet.getPreviousLink().getIndex()));
 				}
 
@@ -536,18 +523,6 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 		packetCopy.setPreviousLink(link);
 
-		Set<Route> routesInLink = new HashSet<Route>();
-		Set<MulticastTree> treesInLink = new HashSet<MulticastTree>();
-		LinkedList<Packet> packets = linkQueue.get(link.getIndex());
-		for (Packet packet2 : packets) {
-			if (packet2.getRoute() != null)
-				routesInLink.add(packet2.getRoute());
-			else
-				treesInLink.add(packet2.getMulticastTree());
-		}
-		packetCopy.getRoutesInTheLink().add(routesInLink);
-		packetCopy.getTreesInTheLink().add(treesInLink);
-
 		linkQueue.get(link.getIndex()).add(packetCopy);
 		double linkTxTime = linkTxTime(packetCopy, link);
 
@@ -563,12 +538,12 @@ public class AFDXBasicSimulator extends IEventGenerator {
 		try {
 			if (link.getIndex() == testLink) {
 				System.out.println(AFDXTools.df_5.format(simTime * 1000) + "--------> link queue "
-						+ linkQueue.get(link.getIndex()).size() + " Route " + packet.getRoute().getIndex()
+						+ linkQueue.get(link.getIndex()).size() + " Route " + packet.getVl().getRoute().getIndex()
 						+ " nextservicetime " + linkNextServiceTime.get(link.getIndex()));
 			}
 		} catch (Exception e) {
 			System.out.println(AFDXTools.df_5.format(simTime * 1000) + "--------> link queue "
-					+ linkQueue.get(link.getIndex()).size() + " Tree " + packet.getMulticastTree().getIndex()
+					+ linkQueue.get(link.getIndex()).size() + " Tree " + packet.getVl().getTree().getIndex()
 					+ " nextservicetime " + linkNextServiceTime.get(link.getIndex()));
 		}
 	}
@@ -594,15 +569,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 		double serviceTime = 0;
 
 		if (packet.getProtocol() == AFDXParameters.UDPProtocol) {
-			int packetLength;
-			if (packet.getRoute() != null)
-				packetLength = Integer
-						.parseInt(packet.getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
-			else
-				packetLength = Integer.parseInt(
-						packet.getMulticastTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
-
-			serviceTime += 8 * (AFDXParameters.ETHHeaderBytes + AFDXParameters.IPHeaderBytes +AFDXParameters.UDPHeaderBytes + packetLength) / link.getCapacity();
+			serviceTime += 8 * (AFDXParameters.ETHHeaderBytes + packet.getVl().getLmaxIPPacket()) / link.getCapacity();
 		} else
 			throw new RuntimeException("Bad");
 

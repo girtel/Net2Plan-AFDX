@@ -3,7 +3,6 @@ package afdx;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -12,7 +11,6 @@ import java.util.TreeSet;
 
 import com.net2plan.interfaces.networkDesign.Link;
 import com.net2plan.interfaces.networkDesign.MulticastTree;
-import com.net2plan.interfaces.networkDesign.Node;
 import com.net2plan.interfaces.networkDesign.Route;
 
 public class AFDXTools {
@@ -25,24 +23,29 @@ public class AFDXTools {
 
 		result = new ArrayList<Set<Route>>();
 
-		if (packet.getpacketLengthsPerLinks().size() == 0) {
+		if (packet.getVlPerLinks().size() == 0) {
 			Set<Route> routes = new HashSet<Route>();
 			routes.addAll(outgoingLink.getTraversingRoutes());
-			if (packet.getRoute() != null)
-				routes.remove(packet.getRoute());
+			if (packet.getVl().getRoute() != null)
+				routes.remove(packet.getVl().getRoute());
 			result.add(routes);
 		} else {
 			Set<Link> links = outgoingLink.getOriginNode().getIncomingLinks();
 
 			for (Link link : links) {
-				if (packet.getRoute() != null && packet.getRoute().getSeqLinksRealPath().contains(link))
-					continue;
+				// if (packet.getRoute() != null &&
+				// packet.getRoute().getSeqLinksRealPath().contains(link))
+				// continue;
 
 				SortedSet<Route> routesFromLink = new TreeSet<>(new RouteLMAXBiggerToSmaller());
 				Set<Route> routes = link.getTraversingRoutes();
-				for (Route route : routes)
+				for (Route route : routes) {
+					if (packet.getVl().getRoute() != null && packet.getVl().getRoute() == route)
+						continue;
+
 					if (route.getSeqLinksRealPath().contains(outgoingLink))
 						routesFromLink.add(route);
+				}
 
 				result.add(routesFromLink);
 			}
@@ -56,24 +59,29 @@ public class AFDXTools {
 
 		result = new ArrayList<Set<MulticastTree>>();
 
-		if (packet.getpacketLengthsPerLinks().size() == 0) {
+		if (packet.getVlPerLinks().size() == 0) {
 			Set<MulticastTree> trees = new HashSet<MulticastTree>();
 			trees.addAll(outgoingLink.getTraversingTrees());
-			if (packet.getMulticastTree() != null)
-				trees.remove(packet.getMulticastTree());
+			if (packet.getVl().getTree() != null)
+				trees.remove(packet.getVl().getTree());
 			result.add(trees);
 		} else {
 			Set<Link> links = outgoingLink.getOriginNode().getIncomingLinks();
 
 			for (Link link : links) {
-				if (packet.getMulticastTree() != null && packet.getMulticastTree().getLinkSet().contains(link))
-					continue;
+				// if (packet.getMulticastTree() != null &&
+				// packet.getMulticastTree().getLinkSet().contains(link))
+				// continue;
 
 				SortedSet<MulticastTree> treessFromLink = new TreeSet<>(new TreeLMAXBiggerToSmaller());
 				Set<MulticastTree> trees = link.getTraversingTrees();
-				for (MulticastTree tree : trees)
+				for (MulticastTree tree : trees) {
+					if (packet.getVl().getTree() != null && packet.getVl().getTree() == tree)
+						continue;
+
 					if (tree.getLinkSet().contains(outgoingLink))
 						treessFromLink.add(tree);
+				}
 
 				result.add(treessFromLink);
 			}
@@ -83,24 +91,26 @@ public class AFDXTools {
 	}
 
 	public static void findVLsCrossingLink(Link link, Packet packet) {
-		List<List<Integer>> result = new ArrayList<List<Integer>>();
+		List<List<VL>> result = new ArrayList<List<VL>>();
 
 		if (packet.getPreviousLink() == null) {
-			List<Integer> packetLengthsPerLinks = new ArrayList<Integer>();
+			List<VL> packetLengthsPerLinks = new ArrayList<VL>();
 
 			Set<Route> routesCrossingLink = link.getTraversingRoutes();
 			for (Route route : routesCrossingLink) {
-				if (packet.getRoute() != null && packet.getRoute() == route)
+				if (packet.getVl().getRoute() != null && packet.getVl().getRoute() == route)
 					continue;
-				packetLengthsPerLinks
-						.add(Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES)));
+
+				VL vl = new VL(route);
+				packetLengthsPerLinks.add(vl);
 			}
 			Set<MulticastTree> treesCrossingLink = link.getTraversingTrees();
 			for (MulticastTree tree : treesCrossingLink) {
-				if (packet.getMulticastTree() != null && packet.getMulticastTree() == tree)
+				if (packet.getVl().getTree() != null && packet.getVl().getTree() == tree)
 					continue;
-				packetLengthsPerLinks.add(
-						Integer.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES)));
+
+				VL vl = new VL(tree);
+				packetLengthsPerLinks.add(vl);
 			}
 
 			Collections.sort(packetLengthsPerLinks);
@@ -112,27 +122,29 @@ public class AFDXTools {
 			Set<Link> inputLinks = link.getOriginNode().getIncomingLinks();
 
 			for (Link inputLink : inputLinks) {
-				List<Integer> packetLengthsPerLinks = new ArrayList<Integer>();
+				List<VL> packetLengthsPerLinks = new ArrayList<VL>();
 
-				if (packet.getRoute() != null && packet.getRoute().getSeqLinksRealPath().contains(inputLink))
-					continue;
-				else if (packet.getMulticastTree() != null
-						&& packet.getMulticastTree().getLinkSet().contains(inputLink))
-					continue;
+				// if (packet.getRoute() != null &&
+				// packet.getRoute().getSeqLinksRealPath().contains(inputLink))
+				// continue;
+				// else if (packet.getMulticastTree() != null
+				// &&
+				// packet.getMulticastTree().getLinkSet().contains(inputLink))
+				// continue;
 
 				Set<Route> routesCrossingLink = inputLink.getTraversingRoutes();
 				for (Route route : routesCrossingLink) {
 					if (route.getSeqLinksRealPath().contains(link)) {
-						packetLengthsPerLinks.add(
-								Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES)));
+						VL vl = new VL(route);
+						packetLengthsPerLinks.add(vl);
 					}
 				}
 
 				Set<MulticastTree> treesCrossingLink = inputLink.getTraversingTrees();
 				for (MulticastTree tree : treesCrossingLink) {
 					if (tree.getLinkSet().contains(link)) {
-						packetLengthsPerLinks.add(Integer
-								.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES)));
+						VL vl = new VL(tree);
+						packetLengthsPerLinks.add(vl);
 					}
 				}
 
@@ -144,7 +156,7 @@ public class AFDXTools {
 			}
 		}
 
-		packet.getpacketLengthsPerLinks().add(result);
+		packet.getVlPerLinks().add(result);
 
 		return;
 		// }
@@ -294,34 +306,29 @@ public class AFDXTools {
 		double jitterInMs = 0;
 
 		Link link;
-		if (packet.getRoute() != null)
-			link = packet.getRoute().getSeqLinksRealPath().get(0);
+		if (packet.getVl().getRoute() != null)
+			link = packet.getVl().getRoute().getSeqLinksRealPath().get(0);
 		else
-			link = packet.getMulticastTree().getSeqLinksToEgressNode(packet.getEgressNode()).get(0);
+			link = packet.getVl().getTree().getSeqLinksToEgressNode(packet.getEgressNode()).get(0);
 
 		Set<Route> routes = link.getTraversingRoutes();
 		for (Route route : routes) {
-			if (packet.getRoute() != null && packet.getRoute() == route)
+			VL vl = new VL(route);
+
+			if (packet.getVl().getRoute() != null && packet.getVl().getRoute() == route)
 				continue;
 
-			jitterInMs += 1000 * 8
-					* (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-							+ Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES))
-							+ AFDXParameters.IFGBytes)
-					/ link.getCapacity();
+			jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
 		}
 
 		Set<MulticastTree> trees = link.getTraversingTrees();
 		for (MulticastTree tree : trees) {
-			if (packet.getMulticastTree() != null && packet.getMulticastTree() == tree)
+			VL vl = new VL(tree);
+
+			if (packet.getVl().getTree() != null && packet.getVl().getTree() == tree)
 				continue;
 
-			jitterInMs += 1000 * 8
-					* (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-							+ Integer
-									.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES))
-							+ AFDXParameters.IFGBytes)
-					/ link.getCapacity();
+			jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
 		}
 
 		return 0.04 + jitterInMs;
@@ -329,41 +336,41 @@ public class AFDXTools {
 
 	public static void setAttibutes(Packet packet, String prefix) {
 		String attribute;
-		if (packet.getRoute() != null) {
+		if (packet.getVl().getRoute() != null) {
 			// Latency
 			attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
-					packet.getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + packet.getRoute().getEgressNode().getName());
+					packet.getVl().getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+			attribute = attribute.replace("YY", "" + packet.getVl().getRoute().getEgressNode().getName());
 
-			packet.getRoute().setAttribute(prefix + attribute, packet.getLastLatency() + "");
+			packet.getVl().getRoute().setAttribute(prefix + attribute, packet.getLastLatency() + "");
 
 			// Minimum delay
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
-					packet.getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+					packet.getVl().getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			attribute = attribute.replace("YY", "" + packet.getEgressNode().getName());
-			packet.getRoute().setAttribute(attribute, packet.getMinimumLatencyInMs() + "");
+			packet.getVl().getRoute().setAttribute(attribute, packet.getMinimumLatencyInMs() + "");
 
 			// Jitter
 			attribute = AFDXParameters.ATT_VL_JITTER.replace("XX",
-					packet.getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			packet.getRoute().setAttribute(attribute, packet.getLastJitter() + "");
+					packet.getVl().getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+			packet.getVl().getRoute().setAttribute(attribute, packet.getLastJitter() + "");
 		} else {
 			// Latency
 			attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
-					packet.getMulticastTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+					packet.getVl().getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			attribute = attribute.replace("YY", "" + packet.getEgressNode().getName());
-			packet.getMulticastTree().setAttribute(prefix + attribute, packet.getLastLatency() + "");
+			packet.getVl().getTree().setAttribute(prefix + attribute, packet.getLastLatency() + "");
 
 			// Minimum delay
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
-					packet.getMulticastTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+					packet.getVl().getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			attribute = attribute.replace("YY", "" + packet.getEgressNode().getName());
-			packet.getMulticastTree().setAttribute(attribute, packet.getMinimumLatencyInMs() + "");
+			packet.getVl().getTree().setAttribute(attribute, packet.getMinimumLatencyInMs() + "");
 
 			// Jitter
 			attribute = AFDXParameters.ATT_VL_JITTER.replace("XX",
-					packet.getMulticastTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			packet.getMulticastTree().setAttribute(attribute, packet.getLastJitter() + "");
+					packet.getVl().getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+			packet.getVl().getTree().setAttribute(attribute, packet.getLastJitter() + "");
 		}
 
 	}

@@ -86,7 +86,8 @@ public class FileVLLoad implements IAlgorithm {
 					int packetSize = Integer.parseInt(params[fields.indexOf(AFDXParameters.CSV_L_MAX_FIELD)]);
 					if (params[fields.indexOf(AFDXParameters.CSV_PROTOCOL)].equals(AFDXParameters.UDPProtocol + ""))
 						packetSize += AFDXParameters.UDPHeaderBytes;
-					packetSize += AFDXParameters.IFGBytes;
+					packetSize += AFDXParameters.IPHeaderBytes;
+					packetSize += AFDXParameters.ETHHeaderBytes + AFDXParameters.IFGBytes;
 					demand.setOfferedTraffic(1000 * 8 * packetSize
 							/ Double.parseDouble(params[fields.indexOf(AFDXParameters.CSV_BAG_FIELD)]));
 				} else {
@@ -116,7 +117,8 @@ public class FileVLLoad implements IAlgorithm {
 					int packetSize = Integer.parseInt(params[fields.indexOf(AFDXParameters.CSV_L_MAX_FIELD)]);
 					if (params[fields.indexOf(AFDXParameters.CSV_PROTOCOL)].equals(AFDXParameters.UDPProtocol + ""))
 						packetSize += AFDXParameters.UDPHeaderBytes;
-					packetSize += AFDXParameters.IFGBytes;
+					packetSize += AFDXParameters.IPHeaderBytes;
+					packetSize += AFDXParameters.ETHHeaderBytes + AFDXParameters.IFGBytes;
 					multicastDemand.setOfferedTraffic(1000 * 8 * packetSize
 							/ Double.parseDouble(params[fields.indexOf(AFDXParameters.CSV_BAG_FIELD)]));
 				}

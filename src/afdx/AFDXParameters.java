@@ -7,9 +7,9 @@ public class AFDXParameters {
 	public static int UDPProtocol = 0;
 	public static int TCPProtocol = 1;
 
-	public static double ETHHeaderBytes = 24;// bytes
-	public static double IPHeaderBytes = 20;// bytes
-	public static double UDPHeaderBytes = 8;// bytes
+	public static int ETHHeaderBytes = 24;// bytes
+	public static int IPHeaderBytes = 20;// bytes
+	public static int UDPHeaderBytes = 8;// bytes
 	// Technology latency for Transmiters in seconds
 	public static double TLTxInMs = 0.15;// ms
 	// Technology latency for Receivers in seconds
@@ -64,7 +64,7 @@ public class AFDXParameters {
 	public static String CSV_Y_POS_FIELD = "y";
 	public static String CSV_LINK_CAPACITY_FIELD = "link_capacity";
 	public static String CSV_LINK_DIRECTION_FIELD = "link_direction";
-		public static String CSV_PORTS_FIELD = "ports";
+	public static String CSV_PORTS_FIELD = "ports";
 	public static String CSV_BAG_FIELD = "bag";
 	public static String CSV_L_MIN_FIELD = "l_min";
 	public static String CSV_L_MAX_FIELD = "l_max";

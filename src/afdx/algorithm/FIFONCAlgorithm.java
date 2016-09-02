@@ -16,6 +16,7 @@ import com.net2plan.utils.Triple;
 import afdx.AFDXParameters;
 import afdx.AFDXTools;
 import afdx.Packet;
+import afdx.VL;
 import afdx.validator.AFDXConfigurationValidator;
 
 public class FIFONCAlgorithm implements IAlgorithm {
@@ -47,7 +48,7 @@ public class FIFONCAlgorithm implements IAlgorithm {
 
 		for (Route route : routes) {
 			// We use a packet to record the performances
-			Packet packet = new Packet(route, null, 0);
+			Packet packet = new Packet(new VL(route), route.getEgressNode(), 0);
 
 			cal(packet);
 		}
@@ -59,7 +60,7 @@ public class FIFONCAlgorithm implements IAlgorithm {
 			Set<Node> egressNodes = tree.getEgressNodes();
 			for (Node egressNode : egressNodes) {
 				// We use a packet to record the performances
-				Packet packet = new Packet(tree, egressNode, null, 0);
+				Packet packet = new Packet(new VL(tree), egressNode, 0);
 
 				cal(packet);
 			}
@@ -71,10 +72,10 @@ public class FIFONCAlgorithm implements IAlgorithm {
 	private void cal(Packet packet) {
 		// Sequence of links in the path
 		List<Link> demandLinks;
-		if (packet.getRoute() != null)
-			demandLinks = packet.getRoute().getSeqLinksRealPath();
+		if (packet.getVl().getRoute() != null)
+			demandLinks = packet.getVl().getRoute().getSeqLinksRealPath();
 		else
-			demandLinks = packet.getMulticastTree().getSeqLinksToEgressNode(packet.getEgressNode());
+			demandLinks = packet.getVl().getTree().getSeqLinksToEgressNode(packet.getEgressNode());
 
 		// For each link in the path
 		for (Link link : demandLinks) {
@@ -114,66 +115,59 @@ public class FIFONCAlgorithm implements IAlgorithm {
 	}
 
 	private double calculateLatency(Packet packet, Map<String, String> algorithmParameters) {
-		int packet_lmax;
-		double packet_bag_ms;
 		List<Link> links;
 
-		if (packet.getRoute() != null) {
-			Route route = packet.getRoute();
-			packet_lmax = Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
-			packet_bag_ms = Double.parseDouble(route.getDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
-			links = route.getInitialSequenceOfLinks();
+		if (packet.getVl().getRoute() != null) {
+			links = packet.getVl().getRoute().getInitialSequenceOfLinks();
 		} else {
-			MulticastTree tree = packet.getMulticastTree();
-			packet_lmax = Integer.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
-			packet_bag_ms = Double.parseDouble(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
-			links = tree.getSeqLinksToEgressNode(packet.getEgressNode());
+			links = packet.getVl().getTree().getSeqLinksToEgressNode(packet.getEgressNode());
 		}
 
 		double latencyInMs = 0.0;
 		packet.getArrivalTimesToNodes().add(latencyInMs);
 		packet.getArrivalNodes().add(links.get(0).getOriginNode());
 
-		List<List<List<Integer>>> hops = packet.getpacketLengthsPerLinks();
+		List<List<List<VL>>> hops = packet.getVlPerLinks();
 		int hopNumber = 0;
 
-		for (List<List<Integer>> packetsPerLinks : hops) {
-			int biggerPacket = 0;
+		for (List<List<VL>> vlPerLinks : hops) {
+			int biggerIPPacket = 0;
 
 			// For each node, we calculate the accumulate latency
 			double totalBitsQueue = 0;
 
 			// We calculate the total byte to send through the output link
 			// having into account the header and the IFG
-			for (List<Integer> lmaxList : packetsPerLinks) {
-				for (Integer lmax : lmaxList) {
-					if (lmax > packet_lmax && lmax > biggerPacket)
-						biggerPacket = lmax;
+			for (List<VL> vlList : vlPerLinks) {
+				for (VL vl : vlList) {
+					if (packet.isVLInLink(vl, hopNumber - 1))
+						continue;
 
-					totalBitsQueue += 8 * (AFDXParameters.ETHHeaderBytes + AFDXParameters.IPHeaderBytes
-							+ AFDXParameters.UDPHeaderBytes + lmax + AFDXParameters.IFGBytes);
+					if (vl.getLmaxIPPacket() > packet.getVl().getLmaxIPPacket()
+							&& vl.getLmaxIPPacket() > biggerIPPacket)
+						biggerIPPacket = vl.getLmaxIPPacket();
+
+					totalBitsQueue += 8
+							* (AFDXParameters.ETHHeaderBytes + vl.getLmaxIPPacket() + AFDXParameters.IFGBytes);
 				}
 			}
 
 			// We add the current VL packet length without IFG
-			totalBitsQueue += 8 * (AFDXParameters.ETHHeaderBytes + AFDXParameters.IPHeaderBytes
-					+ AFDXParameters.UDPHeaderBytes + packet_lmax);
+			totalBitsQueue += 8 * (AFDXParameters.ETHHeaderBytes + packet.getVl().getLmaxIPPacket());
 
 			// We add the technology latency
 			double nodeServiceTimeInMs;
 			if (hopNumber == 0)
 				nodeServiceTimeInMs = AFDXParameters.TLTxInMs;
-			else {
+			else
 				nodeServiceTimeInMs = AFDXParameters.TLSwInMs;
 
-				if (packet.getBiggerPacketpreceding() > 0)
-					totalBitsQueue += 8 * (AFDXParameters.ETHHeaderBytes + AFDXParameters.IPHeaderBytes
-							+ AFDXParameters.UDPHeaderBytes + packet.getBiggerPacketpreceding()
-							+ AFDXParameters.IFGBytes);
-			}
+			if (packet.getBiggerIPPacketPreceding() > 0)
+				totalBitsQueue += 8 * (AFDXParameters.ETHHeaderBytes + packet.getBiggerIPPacketPreceding()
+						- packet.getVl().getLmaxIPPacket() + AFDXParameters.IFGBytes);
 
-			double m = 8 * (AFDXParameters.ETHHeaderBytes + AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-					+ packet_lmax) / packet_bag_ms;
+			double m = 8 * (AFDXParameters.ETHHeaderBytes + packet.getVl().getLmaxIPPacket())
+					/ packet.getVl().getBagMs();
 
 			// We apply the NC calculation
 			NCFunction ncf = new NCFunction(m, totalBitsQueue, links.get(hopNumber).getCapacity() / 1000,
@@ -184,15 +178,15 @@ public class FIFONCAlgorithm implements IAlgorithm {
 			packet.getArrivalNodes().add(links.get(hopNumber).getDestinationNode());
 			packet.getArrivalTimesToNodes().add(latencyInMs);
 
-			if (biggerPacket > packet.getBiggerPacketpreceding())
-				packet.setBiggerPacketpreceding(biggerPacket);
+			if (biggerIPPacket > packet.getBiggerIPPacketPreceding())
+				packet.setBiggerIPPacketPreceding(biggerIPPacket);
 
 			try {
 				String routesString = algorithmParameters.get(AFDXParameters.SIM_PARAM_PRINT_ROUTE_INDEX);
 				String routes2[] = routesString.split(",");
 				for (String string : routes2)
-					if (packet.getRoute().getIndex() == Double.parseDouble(string))
-						System.out.println("getBiggerPacketpreceding " + packet.getBiggerPacketpreceding());
+					if (packet.getVl().getRoute().getIndex() == Double.parseDouble(string))
+						System.out.println("getBiggerIPPacketpreceding " + packet.getBiggerIPPacketPreceding());
 			} catch (Exception e) {
 			}
 
@@ -246,12 +240,12 @@ public class FIFONCAlgorithm implements IAlgorithm {
 
 	private void printResults(Packet packet, Map<String, String> algorithmParameters) {
 		// console printing results
-		if (packet.getRoute() != null) {
+		if (packet.getVl().getRoute() != null) {
 			String routesString = algorithmParameters.get(AFDXParameters.SIM_PARAM_PRINT_ROUTE_INDEX);
 			String routes2[] = routesString.split(",");
 			for (String string : routes2) {
-				if (string.equals(packet.getRoute().getIndex() + "")) {
-					if (packet.getRoute().getIndex() == Double.parseDouble(string)) {
+				if (string.equals(packet.getVl().getRoute().getIndex() + "")) {
+					if (packet.getVl().getRoute().getIndex() == Double.parseDouble(string)) {
 						if (packet.getLastLatency() > Double.parseDouble(
 								algorithmParameters.get(AFDXParameters.SIM_PARAM_MIN_LATENCY_TO_PRINT_ROUTE))) {
 							System.out.println("Print route");
@@ -264,8 +258,8 @@ public class FIFONCAlgorithm implements IAlgorithm {
 			String treesString = algorithmParameters.get(AFDXParameters.SIM_PARAM_PRINT_TREE_INDEX);
 			String trees2[] = treesString.split(",");
 			for (String string : trees2) {
-				if (string.equals(packet.getMulticastTree().getIndex() + ""))
-					if (packet.getMulticastTree().getIndex() == Double.parseDouble(string))
+				if (string.equals(packet.getVl().getTree().getIndex() + ""))
+					if (packet.getVl().getTree().getIndex() == Double.parseDouble(string))
 						if (packet.getLastLatency() > Double.parseDouble(
 								algorithmParameters.get(AFDXParameters.SIM_PARAM_MIN_LATENCY_TO_PRINT_ROUTE))) {
 							System.out.println("Print tree");

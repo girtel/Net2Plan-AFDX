@@ -55,17 +55,8 @@ public class AFDXReport implements IReport {
 			String name = route.getAttribute(AFDXParameters.ATT_VL_NAME);
 			if (name == null)
 				name = "VL_unicast_" + route.getIndex();
-			String source = route.getIngressNode().getName();
-			String destiny[] = { route.getEgressNode().getName() };
-			double bagMs = Double.parseDouble(route.getDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
-			int arrivalType = Integer
-					.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_PERVL_PACKET_ARRIVAL_TYPE));
-			VL vl = new VL(0, bagMs, arrivalType);
+			VL vl = new VL(route);
 			vl.setName(name);
-			vl.setSource(source);
-			vl.setDestiny(destiny);
-			vl.setLmax(Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES)));
-			vl.setRouteIndex(route.getIndex());
 			parameters.add(vl);
 		}
 
@@ -80,22 +71,8 @@ public class AFDXReport implements IReport {
 			String name = tree.getAttribute(AFDXParameters.ATT_VL_NAME);
 			if (name == null)
 				name = "VL_multicast_" + tree.getIndex();
-			String source = tree.getIngressNode().getName();
-			double bagMs = Double.parseDouble(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
-			int arrivalType = Integer
-					.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_PERVL_PACKET_ARRIVAL_TYPE));
-			VL vl = new VL(0, bagMs, arrivalType);
+			VL vl = new VL(tree);
 			vl.setName(name);
-			vl.setSource(source);
-			Set<Node> nodes = tree.getEgressNodes();
-			String destiny[] = new String[nodes.size()];
-			int p = 0;
-			for (Node node : nodes) {
-				destiny[p++] = node.getName();
-			}
-			vl.setDestiny(destiny);
-			vl.setLmax(Integer.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES)));
-			vl.setTreeIndex(tree.getIndex());
 			parameters.add(vl);
 		}
 
@@ -186,18 +163,15 @@ public class AFDXReport implements IReport {
 		out.append(
 				"<tr><th><b>VL Name</b></th><th><b>Source LRU</b></th><th><b>Destination LRU</b></th><b>BAG (ms)</b></th><th><b>L Max (bytes)</b></th><th><b>Max. Bandwidth (Kbps)</b></th></tr>");
 
-
 		for (VL vl : vlRouteParameters) {
 			String name = vl.getName();
-			String source = vl.getSource();
-			String destiny = vl.getDestiny()[0];
 			out.append("<tr>");
 			out.append("<td>").append(name).append("</td>");
-			out.append("<td>").append(source).append("</td>");
-			out.append("<td>").append(destiny).append("</td>");
+			out.append("<td>").append(vl.getRoute().getIngressNode().getName()).append("</td>");
+			out.append("<td>").append(vl.getRoute().getEgressNode().getName()).append("</td>");
 			out.append("<td align=\"center\">").append(vl.getBagMs()).append("</td>");
-			out.append("<td align=\"center\">").append(vl.getLmax()).append("</td>");
-			out.append("<td align=\"center\">").append(AFDXTools.df_2.format(vl.getLmax() * 8 / vl.getBagMs()))
+			out.append("<td align=\"center\">").append(vl.getLmaxIPPacket()).append("</td>");
+			out.append("<td align=\"center\">").append(AFDXTools.df_2.format(vl.getLmaxIPPacket() * 8 / vl.getBagMs()))
 					.append("</td>");
 			out.append("</tr>");
 		}
@@ -211,21 +185,20 @@ public class AFDXReport implements IReport {
 
 		for (VL vl : vlTreeParameters) {
 			String name = vl.getName();
-			String source = vl.getSource();
 			String destiny = null;
-			for (String a : vl.getDestiny()) {
+			for (Node node : vl.getTree().getEgressNodes()) {
 				if (destiny == null)
-					destiny = a;
+					destiny = node.getName();
 				else
-					destiny = destiny + ", " + a;
+					destiny = destiny + ", " + node.getName();
 			}
 			out.append("<tr>");
 			out.append("<td>").append(name).append("</td>");
-			out.append("<td>").append(source).append("</td>");
+			out.append("<td>").append(vl.getTree().getIngressNode().getName()).append("</td>");
 			out.append("<td>").append(destiny).append("</td>");
 			out.append("<td align=\"center\">").append(vl.getBagMs()).append("</td>");
-			out.append("<td align=\"center\">").append(vl.getLmax()).append("</td>");
-			out.append("<td align=\"center\">").append(AFDXTools.df_2.format(vl.getLmax() * 8 / vl.getBagMs()))
+			out.append("<td align=\"center\">").append(vl.getLmaxIPPacket()).append("</td>");
+			out.append("<td align=\"center\">").append(AFDXTools.df_2.format(vl.getLmaxIPPacket() * 8 / vl.getBagMs()))
 					.append("</td>");
 			out.append("</tr>");
 		}
@@ -295,45 +268,43 @@ public class AFDXReport implements IReport {
 
 		for (VL vl : vlRouteParameters) {
 			String name = vl.getName();
-			String source = vl.getSource();
-			String destiny = vl.getDestiny()[0];
-			Route route = netPlan.getRoute(vl.getRouteIndex());
+			Route route = netPlan.getRoute(vl.getRoute().getIndex());
 
 			// JITTER
 			String attribute = AFDXParameters.ATT_VL_JITTER.replace("XX",
 					route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			String jitter = AFDXTools.df_3
-					.format(Double.parseDouble(netPlan.getRoute(vl.getRouteIndex()).getAttribute(attribute)));
+					.format(Double.parseDouble(netPlan.getRoute(vl.getRoute().getIndex()).getAttribute(attribute)));
 
 			// TA
 			attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
 					route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			attribute = attribute.replace("YY", "" + route.getEgressNode().getName());
 			String delayTA = AFDXTools.df_3.format(Double.parseDouble(
-					netPlan.getRoute(vl.getRouteIndex()).getAttribute(FIFOTAAlgorithm.prefix + attribute)));
+					netPlan.getRoute(vl.getRoute().getIndex()).getAttribute(FIFOTAAlgorithm.prefix + attribute)));
 			double delayTADouble = Double.parseDouble(delayTA);
 
-			ta.add(new VLLatency(vl.getRouteIndex(), delayTADouble, delayTADouble, delayTADouble));
+			ta.add(new VLLatency(vl.getRoute().getIndex(), delayTADouble, delayTADouble, delayTADouble));
 
 			// MINIMUM DELAY
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
 					route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			attribute = attribute.replace("YY", "" + route.getEgressNode().getName());
 			String delayMin = AFDXTools.df_3
-					.format(Double.parseDouble(netPlan.getRoute(vl.getRouteIndex()).getAttribute(attribute)));
+					.format(Double.parseDouble(netPlan.getRoute(vl.getRoute().getIndex()).getAttribute(attribute)));
 			double delayMinDouble = Double.parseDouble(delayMin);
 
-			minimum.add(new VLLatency(vl.getRouteIndex(), delayMinDouble, delayMinDouble, delayMinDouble));
+			minimum.add(new VLLatency(vl.getRoute().getIndex(), delayMinDouble, delayMinDouble, delayMinDouble));
 
 			// NC
 			attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
 					route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 			attribute = attribute.replace("YY", "" + route.getEgressNode().getName());
 			String delayNC = AFDXTools.df_3.format(Double.parseDouble(
-					netPlan.getRoute(vl.getRouteIndex()).getAttribute(FIFONCAlgorithm.prefix + attribute)));
+					netPlan.getRoute(vl.getRoute().getIndex()).getAttribute(FIFONCAlgorithm.prefix + attribute)));
 			double delayNCDouble = Double.parseDouble(delayNC);
 
-			nc.add(new VLLatency(vl.getRouteIndex(), delayNCDouble, delayNCDouble, delayNCDouble));
+			nc.add(new VLLatency(vl.getRoute().getIndex(), delayNCDouble, delayNCDouble, delayNCDouble));
 
 			// SIM
 			String delayMaxSIM;
@@ -341,8 +312,8 @@ public class AFDXReport implements IReport {
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MAX.replace("XX",
 						route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				attribute = attribute.replace("YY", "" + route.getEgressNode().getName());
-				delayMaxSIM = AFDXTools.df_3.format(Double.parseDouble(
-						netPlan.getRoute(vl.getRouteIndex()).getAttribute(AFDXBasicSimulator.prefix + attribute)));
+				delayMaxSIM = AFDXTools.df_3.format(Double.parseDouble(netPlan.getRoute(vl.getRoute().getIndex())
+						.getAttribute(AFDXBasicSimulator.prefix + attribute)));
 			} catch (Exception e) {
 				delayMaxSIM = "-1";
 				e.printStackTrace();
@@ -359,8 +330,8 @@ public class AFDXReport implements IReport {
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MEAN.replace("XX",
 						route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				attribute = attribute.replace("YY", "" + route.getEgressNode().getName());
-				delayMeanSIM = AFDXTools.df_3.format(Double.parseDouble(
-						netPlan.getRoute(vl.getRouteIndex()).getAttribute(AFDXBasicSimulator.prefix + attribute)));
+				delayMeanSIM = AFDXTools.df_3.format(Double.parseDouble(netPlan.getRoute(vl.getRoute().getIndex())
+						.getAttribute(AFDXBasicSimulator.prefix + attribute)));
 			} catch (Exception e) {
 				delayMeanSIM = "-1";
 				e.printStackTrace();
@@ -377,8 +348,8 @@ public class AFDXReport implements IReport {
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
 						route.getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				attribute = attribute.replace("YY", "" + route.getEgressNode().getName());
-				delayMinSIM = AFDXTools.df_3.format(Double.parseDouble(
-						netPlan.getRoute(vl.getRouteIndex()).getAttribute(AFDXBasicSimulator.prefix + attribute)));
+				delayMinSIM = AFDXTools.df_3.format(Double.parseDouble(netPlan.getRoute(vl.getRoute().getIndex())
+						.getAttribute(AFDXBasicSimulator.prefix + attribute)));
 			} catch (Exception e) {
 				delayMinSIM = "-1";
 				e.printStackTrace();
@@ -390,12 +361,12 @@ public class AFDXReport implements IReport {
 				e.printStackTrace();
 			}
 
-			sim.add(new VLLatency(vl.getRouteIndex(), delayMeanSIMDouble, delayMinSIMDouble, delayMaxSIMDouble));
+			sim.add(new VLLatency(vl.getRoute().getIndex(), delayMeanSIMDouble, delayMinSIMDouble, delayMaxSIMDouble));
 
 			out.append("<tr>");
 			out.append("<td>").append(name).append("</td>");
-			out.append("<td>").append(source).append("</td>");
-			out.append("<td>").append(destiny).append("</td>");
+			out.append("<td>").append(vl.getRoute().getIngressNode().getName()).append("</td>");
+			out.append("<td>").append(vl.getRoute().getEgressNode().getName()).append("</td>");
 
 			// JITTER
 			out.append("<td align=\"center\">");
@@ -527,27 +498,25 @@ public class AFDXReport implements IReport {
 
 		for (VL vl : vlTreeParameters) {
 			String name = vl.getName();
-			String source = vl.getSource();
-			MulticastTree tree = netPlan.getMulticastTree(vl.getTreeIndex());
 
-			Set<Node> egressNodes = tree.getEgressNodes();
+			Set<Node> egressNodes = vl.getTree().getEgressNodes();
 			int n = 0;
 			for (Node node : egressNodes) {
 				String destiny = node.getName();
 
 				// JITTER
 				String attribute = AFDXParameters.ATT_VL_JITTER.replace("XX",
-						tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+						vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				String jitter = AFDXTools.df_3.format(
-						Double.parseDouble(netPlan.getMulticastTree(vl.getTreeIndex()).getAttribute(attribute)));
+						Double.parseDouble(netPlan.getMulticastTree(vl.getTree().getIndex()).getAttribute(attribute)));
 
 				// TA
 				attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
-						tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+						vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				attribute = attribute.replace("YY", node.getName());
 
-				String delayTA = AFDXTools.df_3.format(Double.parseDouble(
-						netPlan.getMulticastTree(vl.getTreeIndex()).getAttribute(FIFOTAAlgorithm.prefix + attribute)));
+				String delayTA = AFDXTools.df_3.format(Double.parseDouble(netPlan
+						.getMulticastTree(vl.getTree().getIndex()).getAttribute(FIFOTAAlgorithm.prefix + attribute)));
 				double delayTADouble = Double.parseDouble(delayTA);
 
 				TASerie.add(vl_number, delayTADouble, delayTADouble, delayTADouble);
@@ -558,21 +527,21 @@ public class AFDXReport implements IReport {
 
 				// MINIMUM DELAY
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
-						tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+						vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				attribute = attribute.replace("YY", node.getName());
 				String delayMin = AFDXTools.df_3.format(
-						Double.parseDouble(netPlan.getMulticastTree(vl.getTreeIndex()).getAttribute(attribute)));
+						Double.parseDouble(netPlan.getMulticastTree(vl.getTree().getIndex()).getAttribute(attribute)));
 				double delayMinDouble = Double.parseDouble(delayMin);
 
-				minimum.add(new VLLatency(vl.getRouteIndex(), delayMinDouble, delayMinDouble, delayMinDouble));
+				minimum.add(new VLLatency(vl.getTree().getIndex(), delayMinDouble, delayMinDouble, delayMinDouble));
 
 				// NC
 				attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
-						tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+						vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 				attribute = attribute.replace("YY", node.getName());
 
-				String delayNC = AFDXTools.df_3.format(Double.parseDouble(
-						netPlan.getMulticastTree(vl.getTreeIndex()).getAttribute(FIFONCAlgorithm.prefix + attribute)));
+				String delayNC = AFDXTools.df_3.format(Double.parseDouble(netPlan
+						.getMulticastTree(vl.getTree().getIndex()).getAttribute(FIFONCAlgorithm.prefix + attribute)));
 				double delayNCDouble = Double.parseDouble(delayNC);
 
 				NCSerie.add(vl_number, delayNCDouble, delayNCDouble, delayNCDouble);
@@ -585,10 +554,11 @@ public class AFDXReport implements IReport {
 				String delayMaxSIMDelay;
 				try {
 					attribute = AFDXParameters.ATT_VL_DST_DELAY_MAX.replace("XX",
-							tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+							vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 					attribute = attribute.replace("YY", "" + node.getName());
-					delayMaxSIMDelay = AFDXTools.df_3.format(Double.parseDouble(netPlan
-							.getMulticastTree(vl.getTreeIndex()).getAttribute(AFDXBasicSimulator.prefix + attribute)));
+					delayMaxSIMDelay = AFDXTools.df_3
+							.format(Double.parseDouble(netPlan.getMulticastTree(vl.getTree().getIndex())
+									.getAttribute(AFDXBasicSimulator.prefix + attribute)));
 				} catch (Exception e) {
 					delayMaxSIMDelay = "-1";
 				}
@@ -601,10 +571,11 @@ public class AFDXReport implements IReport {
 				String delayMeanDelay;
 				try {
 					attribute = AFDXParameters.ATT_VL_DST_DELAY_MEAN.replace("XX",
-							tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+							vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 					attribute = attribute.replace("YY", "" + node.getName());
-					delayMeanDelay = AFDXTools.df_3.format(Double.parseDouble(netPlan
-							.getMulticastTree(vl.getTreeIndex()).getAttribute(AFDXBasicSimulator.prefix + attribute)));
+					delayMeanDelay = AFDXTools.df_3
+							.format(Double.parseDouble(netPlan.getMulticastTree(vl.getTree().getIndex())
+									.getAttribute(AFDXBasicSimulator.prefix + attribute)));
 				} catch (Exception e) {
 					delayMeanDelay = "-1";
 				}
@@ -617,10 +588,11 @@ public class AFDXReport implements IReport {
 				String delayMinSIMDelay;
 				try {
 					attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
-							tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+							vl.getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
 					attribute = attribute.replace("YY", "" + node.getName());
-					delayMinSIMDelay = AFDXTools.df_3.format(Double.parseDouble(netPlan
-							.getMulticastTree(vl.getTreeIndex()).getAttribute(AFDXBasicSimulator.prefix + attribute)));
+					delayMinSIMDelay = AFDXTools.df_3
+							.format(Double.parseDouble(netPlan.getMulticastTree(vl.getTree().getIndex())
+									.getAttribute(AFDXBasicSimulator.prefix + attribute)));
 				} catch (Exception e) {
 					delayMinSIMDelay = "-1";
 				}
@@ -641,7 +613,7 @@ public class AFDXReport implements IReport {
 				if (n == 0)
 					out.append(name);
 				out.append("</td>");
-				out.append("<td>").append(source).append("</td>");
+				out.append("<td>").append(vl.getTree().getIngressNode().getName()).append("</td>");
 				out.append("<td>").append(destiny).append("</td>");
 
 				// JITTER

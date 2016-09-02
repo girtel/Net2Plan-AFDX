@@ -1,33 +1,42 @@
 package afdx;
 
-public class VL {
-	private String name;
-	private String source;
-	private String destiny[];
-	private int lmax;
-	final int lengthBytes;
-	final double bagMs;
-	final int arrivalType;
-	private int routeIndex = -1;
-	private int treeIndex = -1;
+import java.util.HashSet;
+import java.util.Set;
 
-	public VL(int lengthBytes, double bagMs, int arrivalType) {
+import com.net2plan.interfaces.networkDesign.MulticastTree;
+import com.net2plan.interfaces.networkDesign.Node;
+import com.net2plan.interfaces.networkDesign.Route;
+
+public class VL implements Comparable<VL> {
+	private String name;
+	private Route route;
+	private MulticastTree tree;
+
+	public VL(Route route) {
 		super();
-		this.lengthBytes = lengthBytes;
-		this.bagMs = bagMs;
-		this.arrivalType = arrivalType;
+		this.route = route;
+		this.tree = null;
 	}
 
-	public int getLengthBytes() {
-		return lengthBytes;
+	public VL(MulticastTree tree) {
+		super();
+		this.route = null;
+		this.tree = tree;
 	}
 
 	public double getBagMs() {
-		return bagMs;
+		if (route != null)
+			return Double.parseDouble(route.getDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
+		else
+			return Double.parseDouble(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_BAG_MS));
 	}
 
 	public int getArrivalType() {
-		return arrivalType;
+		if (route != null)
+			return Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_PERVL_PACKET_ARRIVAL_TYPE));
+		else
+			return Integer
+					.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_PERVL_PACKET_ARRIVAL_TYPE));
 	}
 
 	public String getName() {
@@ -38,44 +47,73 @@ public class VL {
 		this.name = name;
 	}
 
-	public String getSource() {
-		return source;
+	public Node getSource() {
+		if (route != null)
+			return route.getIngressNode();
+		else
+			return tree.getIngressNode();
 	}
 
-	public void setSource(String source) {
-		this.source = source;
-	}
-
-	public String[] getDestiny() {
-		return destiny;
-	}
-
-	public void setDestiny(String[] destiny) {
-		this.destiny = destiny;
+	public Set<Node> getDestiny() {
+		if (route != null) {
+			Set<Node> dest = new HashSet<Node>();
+			dest.add(route.getEgressNode());
+			return dest;
+		} else
+			return tree.getEgressNodes();
 	}
 
 	public int getLmax() {
-		return lmax;
+		if (route != null)
+			return Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
+		else
+			return Integer.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
 	}
 
-	public void setLmax(int lmax) {
-		this.lmax = lmax;
+	public int getLmaxIPPacket() {
+		int result = (int) (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes);
+
+		if (route != null)
+			result += Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
+		else
+			result += Integer.parseInt(tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES));
+
+		return result;
 	}
 
-	public int getRouteIndex() {
-		return routeIndex;
+	public Route getRoute() {
+		return route;
 	}
 
-	public void setRouteIndex(int routeIndex) {
-		this.routeIndex = routeIndex;
+	public MulticastTree getTree() {
+		return tree;
 	}
 
-	public int getTreeIndex() {
-		return treeIndex;
+	public boolean isThisVL(VL vl) {
+		boolean result = false;
+
+		try {
+			if (this.route.getIndex() == vl.getRoute().getIndex())
+				result = true;
+		} catch (Exception e) {
+			try {
+				if (this.tree.getIndex() == vl.getTree().getIndex())
+					result = true;
+			} catch (Exception e1) {
+			}
+		}
+
+		return result;
 	}
 
-	public void setTreeIndex(int treeIndex) {
-		this.treeIndex = treeIndex;
+	@Override
+	public int compareTo(VL o) {
+		int result = 1;
+
+		if (getLmax() < o.getLmax())
+			result = -1;
+
+		return result;
 	}
 
 }

@@ -14,6 +14,7 @@ import com.net2plan.interfaces.networkDesign.Route;
 
 import afdx.AFDXParameters;
 import afdx.AFDXTools;
+import afdx.VL;
 
 public class AFDXConfigurationValidator {
 	public boolean AFDXValidation(NetPlan netPlan) {
@@ -101,24 +102,20 @@ public class AFDXConfigurationValidator {
 
 			Set<Route> routes = link.getTraversingRoutes();
 			for (Route route : routes) {
+				VL vl = new VL(route);
+
 				if (route.getDemand() == demand)
 					continue;
 
-				jitterInMs += 1000 * 8
-						* (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-								+ Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES))
-								+ AFDXParameters.IFGBytes)
-						/ link.getCapacity();
+				jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
 			}
 
 			Set<MulticastTree> trees = link.getTraversingTrees();
-			for (MulticastTree tree : trees)
-				jitterInMs += 1000 * 8
-						* (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-								+ Integer.parseInt(
-										tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES))
-								+ AFDXParameters.IFGBytes)
-						/ link.getCapacity();
+			for (MulticastTree tree : trees) {
+				VL vl = new VL(tree);
+
+				jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
+			}
 
 			if (jitterInMs > AFDXParameters.MaxJitterInMsPerES) {
 				result = false;
@@ -137,24 +134,20 @@ public class AFDXConfigurationValidator {
 					.getSeqLinksToEgressNode(demand.getEgressNodes().iterator().next()).get(0);
 
 			Set<Route> routes = link.getTraversingRoutes();
-			for (Route route : routes)
-				jitterInMs += 1000 * 8
-						* (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-								+ Integer.parseInt(route.getDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES))
-								+ AFDXParameters.IFGBytes)
-						/ link.getCapacity();
+			for (Route route : routes) {
+				VL vl = new VL(route);
+
+				jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
+			}
 
 			Set<MulticastTree> trees = link.getTraversingTrees();
 			for (MulticastTree tree : trees) {
+				VL vl = new VL(tree);
+
 				if (tree.getMulticastDemand() == demand)
 					continue;
 
-				jitterInMs += 1000 * 8
-						* (AFDXParameters.IPHeaderBytes + AFDXParameters.UDPHeaderBytes
-								+ Integer.parseInt(
-										tree.getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_L_MAX_BYTES))
-								+ AFDXParameters.IFGBytes)
-						/ link.getCapacity();
+				jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
 			}
 
 			if (jitterInMs > AFDXParameters.MaxJitterInMsPerES) {
