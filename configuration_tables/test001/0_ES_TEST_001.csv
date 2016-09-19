@@ -1,0 +1,1 @@
+id;name;links;x;y;link_capacity;link_direction1;LRU1;1;-1;0;10000000;b2;LRU2;4;4;0;10000000;b3;LRU3;5;-1;1;10000000;b

@@ -1,0 +1,1 @@
+id;name;bag;jitter_max;l_max;src;dsts;routes;per_vl_packet_arrival_type;regulator_queue_size1;VL1;2;;100;LRU1;LRU2;;1;52;VL2;2;;500;LRU1;LRU2;;1;53;VL3;2;;100;LRU3;LRU2;;1;54;VL4;2;;500;LRU3;LRU2;;1;5

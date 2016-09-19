@@ -190,7 +190,7 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 		return packet.getLeavingNetworkTime();
 	}
 
-	private double calculateLatencyGrouping(Packet packet) {
+	private double calculateLatencyGrouping1(Packet packet) {
 		List<Link> links;
 
 		if (packet.getVl().getRoute() != null) {
@@ -305,7 +305,7 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 		return packet.getLeavingNetworkTime();
 	}
 
-	private double calculateLatencyGrouping1(Packet packet) {
+	private double calculateLatencyGrouping(Packet packet) {
 		List<Link> links;
 
 		if (packet.getVl().getRoute() != null) {

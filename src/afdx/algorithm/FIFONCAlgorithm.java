@@ -27,7 +27,7 @@ public class FIFONCAlgorithm implements IAlgorithm {
 			"");
 	private InputParameter printlatency = new InputParameter(AFDXParameters.SIM_PARAM_MIN_LATENCY_TO_PRINT_ROUTE,
 			(double) -1, "");
-	private InputParameter grouping = new InputParameter(AFDXParameters.SIM_PARAM_GROUPING, "N", "");
+	//	private InputParameter grouping = new InputParameter(AFDXParameters.SIM_PARAM_GROUPING, "N", "");
 
 	private Map<String, String> algorithmParameters;
 
