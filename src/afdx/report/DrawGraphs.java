@@ -1,19 +1,40 @@
 package afdx.report;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.Paint;
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.PeriodAxis;
+import org.jfree.chart.axis.PeriodAxisLabelInfo;
+import org.jfree.chart.axis.SymbolAxis;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.block.Block;
+import org.jfree.chart.block.BlockContainer;
+import org.jfree.chart.block.LabelBlock;
+import org.jfree.chart.plot.DrawingSupplier;
+import org.jfree.chart.plot.PieLabelLinkStyle;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.DeviationRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.CompositeTitle;
+import org.jfree.chart.title.LegendTitle;
+import org.jfree.chart.title.PaintScaleLegend;
+import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
 import org.jfree.data.xy.YIntervalSeries;
 import org.jfree.data.xy.YIntervalSeriesCollection;
+import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 
 public class DrawGraphs {
@@ -22,7 +43,7 @@ public class DrawGraphs {
 	public void saveGraph2jpg(String filename, List<YIntervalSeries> series, double min, double max, int width) {
 		if (width < 1000)
 			width = 1000;
-		
+
 		YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
 		for (YIntervalSeries yIntervalSeries : series) {
 			dataset.addSeries(yIntervalSeries);
@@ -31,7 +52,7 @@ public class DrawGraphs {
 		boolean createLegend = false;
 
 		// create the chart...
-		JFreeChart chart = ChartFactory.createXYLineChart("AFDX", this.xAxisLabel, this.yAxisLabel, dataset,
+		JFreeChart chart = ChartFactory.createXYLineChart("AFDX VL Delays", this.xAxisLabel, this.yAxisLabel, dataset,
 				PlotOrientation.VERTICAL, createLegend, true, false);
 
 		chart.setBackgroundPaint(Color.white);
@@ -56,14 +77,22 @@ public class DrawGraphs {
 		// yAxis.setLabel("Latency (ms)");
 		yAxis.setRange(min * .9, max * 1.1);
 
-		DeviationRenderer coPolRenderer1 = new DeviationRenderer(true, false);
-		coPolRenderer1.setSeriesFillPaint(0, new Color(0, 255, 0));
-		coPolRenderer1.setSeriesPaint(0, new Color(0, 0, 255));
-		plot.setRenderer(0, coPolRenderer1);
-		DeviationRenderer coPolRenderer2 = new DeviationRenderer(true, false);
-		coPolRenderer2.setSeriesFillPaint(1, new Color(255, 0, 0));
-		coPolRenderer2.setSeriesPaint(1, new Color(0, 255, 0));
-		plot.setRenderer(1, coPolRenderer2);
+		DeviationRenderer coPolRenderer = new DeviationRenderer(true, false);
+		coPolRenderer.setSeriesFillPaint(0, Color.GRAY);
+		coPolRenderer.setSeriesPaint(0, Color.BLACK);
+		plot.setRenderer(0, coPolRenderer);
+
+		plot.getRenderer().setSeriesPaint(1, Color.GREEN);
+
+		plot.getRenderer().setSeriesPaint(2, Color.BLUE);
+
+		plot.getRenderer().setSeriesPaint(3, Color.RED);
+
+		addLegend(chart);
+
+		// LegendTitle legend = chart.getLegend();
+		// legend.setPosition(RectangleEdge.RIGHT);
+		// chart.addLegend(legend);
 
 		// XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)
 		// plot.getRenderer();
@@ -106,6 +135,31 @@ public class DrawGraphs {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
+
+	protected final void addLegend(JFreeChart chart) {
+		if (chart == null) {
+			throw new IllegalStateException("initChart() must be called first");
+		}
+
+		LegendTitle legend = new LegendTitle(chart.getPlot());
+		legend.setItemFont(new Font("Tahoma", Font.BOLD, 14));
+		legend.setBorder(1, 1, 1, 1);
+		legend.setBackgroundPaint(Color.WHITE);
+		legend.setPosition(RectangleEdge.BOTTOM);
+
+		// XYPlot plot = (XYPlot) chart.getPlot();
+		// final XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer)
+		// plot.getRenderer(0);
+		// int lines = plot.getSeriesCount();
+		// for (int i = 0; i < lines; i++) {
+		// renderer.setSeriesStroke(i, new BasicStroke(1));
+		// }
+
+		RectangleInsets padding = new RectangleInsets(5, 5, 5, 5);
+		legend.setItemLabelPadding(padding);
+
+		chart.addLegend(legend);
+	}
+
 }

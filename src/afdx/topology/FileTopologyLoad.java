@@ -1,5 +1,6 @@
 package afdx.topology;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -23,11 +24,11 @@ public class FileTopologyLoad implements IAlgorithm {
 	@Override
 	public String executeAlgorithm(NetPlan netPlan, Map<String, String> algorithmParameters,
 			Map<String, String> net2planParameters) {
-		String fileName = "0_TOPOLOGY";
-		String sufix = algorithmParameters.get(AFDXParameters.SIM_FILE_NAME);
-		if (!sufix.equals(""))
-			fileName += "_" + sufix;
-		fileName += ".csv";
+		String fileName = "0_TOPOLOGY.csv";
+		String folderName = algorithmParameters.get(AFDXParameters.SIM_FILE_NAME);
+		fileName = (!folderName.equals("")
+				? AFDXParameters.CONFIGURATION_TABLES_FOLDER + File.separator + folderName + File.separator : "")
+				+ fileName;
 
 		double lengthInKm = 0.05;// 50 meters
 		int space = 100;

@@ -1,23 +1,25 @@
 package afdx.afdx;
 
 public class AFDXParameters {
-	
+
 	public static double propagationSpeedInKmPerSecond = 300.0E6;
 	// public static double attributes = ;
 	// public static double optionalLayerParameter = ;
 	public static int UDPProtocol = 0;
 	public static int TCPProtocol = 1;
 
-	public static int ETHHeaderBytes = 24;// bytes
+	public static int ETHHeaderBytes = 26;// bytes
+	public static int ETHPreambleSFDBytes = 8;// bytes
 	public static int IPHeaderBytes = 20;// bytes
 	public static int UDPHeaderBytes = 8;// bytes
+	public static double IFGBytes = 12;// bytes
 	// Technology latency for Transmiters in seconds
 	public static double TLTxInMs = 0.15;// ms
 	// Technology latency for Receivers in seconds
 	public static double TLRxInMs = 0.15;// ms
 	// Technology latency for switches in seconds
 	public static double TLSwInMs = 0.1;// ms
-	public static double IFGBytes = 12;// bytes
+	public static double TechnologicalJitter = 0.04;// micro seconds
 	public static int MaxNumberOfVLs = 4096;
 	public static int MaxNumberOfVLPerES = 128;
 	public static double MaxJitterInMsPerES = 0.5;
@@ -37,7 +39,7 @@ public class AFDXParameters {
 	// atributtes names
 	public static String ATT_VL_ID = "VL_ID";
 	public static String ATT_VL_NAME = "VL_NAME";
-	public static String ATT_VL_JITTER = "VL_XX_JITTER";
+	public static String ATT_VL_DST_JITTER = "VL_XX_DST_YY_JITTER";
 	public static String ATT_VL_DST_DELAY = "VL_XX_DST_YY_DELAY";
 	public static String ATT_VL_DST_DELAY_MIN = "VL_XX_DST_YY_DELAY_MIN";
 	public static String ATT_VL_DST_DELAY_MEAN = "VL_XX_DST_YY_DELAY_MEAN";
@@ -90,5 +92,9 @@ public class AFDXParameters {
 	public static String SIM_PARAM_PRINT_TREE_INDEX = "Print Tree index";
 	public static String SIM_PARAM_MIN_LATENCY_TO_PRINT_ROUTE = "Minimum Latency to print Route";
 	public static String SIM_PARAM_MIN_LATENCY_TO_PRINT_TREE = "Minimum Latency to print Tree";
-	public static String SIM_PARAM_GROUPING = "Grouping algorithm (Y/N)";
+	public static String SIM_PARAM_GROUPING = "Optimized algorithm (Y/N)";
+
+	// Folders
+	public static String CONFIGURATION_TABLES_FOLDER = "configuration_tables";
+
 }

@@ -1,5 +1,6 @@
 package afdx.endSystem;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -24,11 +25,11 @@ public class FileESLoad implements IAlgorithm {
 	public String executeAlgorithm(NetPlan netPlan, Map<String, String> algorithmParameters,
 			Map<String, String> net2planParameters) {
 
-		String fileName = "0_ES";
-		String sufix = algorithmParameters.get(AFDXParameters.SIM_FILE_NAME);
-		if (!sufix.equals(""))
-			fileName += "_" + sufix;
-		fileName += ".csv";
+		String fileName = "0_ES.csv";
+		String folderName = algorithmParameters.get(AFDXParameters.SIM_FILE_NAME);
+		fileName = (!folderName.equals("")
+				? AFDXParameters.CONFIGURATION_TABLES_FOLDER + File.separator + folderName + File.separator : "")
+				+ fileName;
 
 		double lengthInKm = 0.05;// 50 meters
 		int space = 100;
@@ -42,8 +43,6 @@ public class FileESLoad implements IAlgorithm {
 			String lines[] = content.split("[\\r\\n]+");
 
 			List<String> fields = new ArrayList<String>(Arrays.asList(lines[0].split(";")));
-
-			Hashtable<String, String> node_id_name = loadSwitchNames(netPlan, fileName);
 
 			boolean firstLine = true;
 			for (String line : lines) {
@@ -91,7 +90,7 @@ public class FileESLoad implements IAlgorithm {
 		return null;
 	}
 
-	public Hashtable<String, String> loadSwitchNames(NetPlan netPlan, String fileName) {
+	public Hashtable<String, String> loadNodeNames(NetPlan netPlan, String fileName) {
 		Hashtable<String, String> result = new Hashtable<String, String>();
 
 		String path = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();

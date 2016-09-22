@@ -1,5 +1,6 @@
 package afdx.vl;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,17 +29,16 @@ public class FileVLLoad implements IAlgorithm {
 	public String executeAlgorithm(NetPlan netPlan, Map<String, String> algorithmParameters,
 			Map<String, String> net2planParameters) {
 
-		String fileName = "0_VL";
-		String sufix = algorithmParameters.get(AFDXParameters.SIM_FILE_NAME);
-		if (!sufix.equals(""))
-			fileName += "_" + sufix;
-		fileName += ".csv";
+		String fileName = "0_VL.csv";
+		String folderName = algorithmParameters.get(AFDXParameters.SIM_FILE_NAME);
 
 		String path = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
 		path = path.substring(0, path.lastIndexOf("/") + 1);
 
 		try {
-			String content = new String(Files.readAllBytes(Paths.get(path + fileName)));
+			String content = new String(Files.readAllBytes(Paths.get(path + (!folderName.equals("")
+					? AFDXParameters.CONFIGURATION_TABLES_FOLDER + File.separator + folderName + File.separator : "")
+					+ fileName)));
 
 			String lines[] = content.split("[\\r\\n]+");
 

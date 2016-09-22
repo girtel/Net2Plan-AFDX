@@ -190,7 +190,7 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 		return packet.getLeavingNetworkTime();
 	}
 
-	private double calculateLatencyGrouping1(Packet packet) {
+	private double calculateLatencyGrouping(Packet packet) {
 		List<Link> links;
 
 		if (packet.getVl().getRoute() != null) {
@@ -220,14 +220,38 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 
 				// We calculate the total byte to send through the output link
 				// having into account the header and the IFG
-				for (VL vl : packetsPerInputLink) {
-					if (vl.getLmaxIPPacket() > packet.getVl().getLmaxIPPacket()
-							&& vl.getLmaxIPPacket() > biggerIPPacket)
-						biggerIPPacket = vl.getLmaxIPPacket();
+				double totalBitsQueueLink = 0;
+				int biggerIPPacketLink = 0;
 
-					totalBitsQueue += 8
+				for (VL vl : packetsPerInputLink) {
+					try {
+						if (packet.getVl().getRoute().getIndex() == vl.getRoute().getIndex()) {
+							totalBitsQueueLink = 0;
+							biggerIPPacketLink = 0;
+							break;
+						}
+					} catch (Exception e) {
+					}
+					try {
+						if (packet.getVl().getTree().getIndex() == vl.getTree().getIndex()) {
+							totalBitsQueueLink = 0;
+							biggerIPPacketLink = 0;
+							break;
+						}
+					} catch (Exception e) {
+					}
+
+					if (vl.getLmaxIPPacket() > biggerIPPacketLink)
+						biggerIPPacketLink = vl.getLmaxIPPacket();
+
+					totalBitsQueueLink += 8
 							* (AFDXParameters.ETHHeaderBytes + vl.getLmaxIPPacket() + AFDXParameters.IFGBytes);
 				}
+
+				if (biggerIPPacketLink > packet.getVl().getLmaxIPPacket())
+					biggerIPPacket = biggerIPPacketLink;
+
+				totalBitsQueue += totalBitsQueueLink;
 
 				double currentInputLinkLatency = 1000 * totalBitsQueue / (links.get(hopNumber).getCapacity());
 				if (hopNumber == 0) {
@@ -305,7 +329,7 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 		return packet.getLeavingNetworkTime();
 	}
 
-	private double calculateLatencyGrouping(Packet packet) {
+	private double calculateLatencyGrouping1(Packet packet) {
 		List<Link> links;
 
 		if (packet.getVl().getRoute() != null) {
@@ -322,7 +346,7 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 		int hopNumber = 0;
 
 		// Current VL packet length without IFG hopNumber times
-		double VLPacketSize = 1000 * 8 * (AFDXParameters.ETHHeaderBytes + packet.getVl().getLmaxIPPacket());
+		double VLPacketSize = 8 * (AFDXParameters.ETHHeaderBytes + packet.getVl().getLmaxIPPacket());
 
 		for (List<List<VL>> packetsPerInputLinks : hops) {
 			int biggerPacket = 0;
@@ -405,7 +429,7 @@ public class FIFOTAAlgorithm implements IAlgorithm {
 
 			packet.getArrivalNodes().add(links.get(hopNumber).getDestinationNode());
 			packet.getArrivalTimesToNodes().add(cummulatedLatencyInMs + nodeServiceTimeInMs
-					+ (VLPacketSize * (hopNumber + 1) / (links.get(hopNumber).getCapacity())));
+					+ (1000 * VLPacketSize * (hopNumber + 1) / (links.get(hopNumber).getCapacity())));
 
 			if (biggerPacket > packet.getBiggerIPPacketPreceding())
 				packet.setBiggerIPPacketPreceding(biggerPacket);

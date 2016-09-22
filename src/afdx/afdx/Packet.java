@@ -220,7 +220,8 @@ public class Packet {
 					+ ")");
 
 		}
-		System.out.println("\n\tLatency " + AFDXTools.df_5.format((leavingNetworkTime - arrivalTimeToNode.get(0))));
+		System.out.println("\n\tJitter " + AFDXTools.df_5.format(lastJitter));
+		System.out.println("\n\tLatency " + AFDXTools.df_5.format(leavingNetworkTime - arrivalTimeToNode.get(0)));
 
 		System.out.println("\nVLs in the links");
 		for (int i = 0; i < vlPerLinks.size(); i++) {

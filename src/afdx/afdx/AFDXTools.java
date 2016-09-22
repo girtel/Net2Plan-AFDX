@@ -313,25 +313,30 @@ public class AFDXTools {
 
 		Set<Route> routes = link.getTraversingRoutes();
 		for (Route route : routes) {
-			VL vl = new VL(route);
-
 			if (packet.getVl().getRoute() != null && packet.getVl().getRoute() == route)
 				continue;
 
-			jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
+			VL vl = new VL(route);
+
+			jitterInMs += 1000 * 8 * (AFDXParameters.ETHHeaderBytes + vl.getLmaxIPPacket() + AFDXParameters.IFGBytes)
+					/ link.getCapacity();
 		}
 
 		Set<MulticastTree> trees = link.getTraversingTrees();
 		for (MulticastTree tree : trees) {
-			VL vl = new VL(tree);
-
 			if (packet.getVl().getTree() != null && packet.getVl().getTree() == tree)
 				continue;
 
-			jitterInMs += 1000 * 8 * (vl.getLmaxIPPacket() + AFDXParameters.IFGBytes) / link.getCapacity();
+			VL vl = new VL(tree);
+			if (packet.getVl().getRoute() != null && packet.getVl().getRoute().getIndex() == 1) {
+				System.out.println(vl.getLmaxIPPacket());
+			}
+
+			jitterInMs += 1000 * 8 * (AFDXParameters.ETHHeaderBytes + vl.getLmaxIPPacket() + AFDXParameters.IFGBytes)
+					/ link.getCapacity();
 		}
 
-		return 0.04 + jitterInMs;
+		return AFDXParameters.TechnologicalJitter + jitterInMs;
 	}
 
 	public static void setAttibutes(Packet packet, String prefix) {
@@ -340,36 +345,38 @@ public class AFDXTools {
 			// Latency
 			attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
 					packet.getVl().getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + packet.getVl().getRoute().getEgressNode().getName());
+			attribute = attribute.replace("YY", packet.getVl().getRoute().getEgressNode().getName());
 
 			packet.getVl().getRoute().setAttribute(prefix + attribute, packet.getLastLatency() + "");
 
 			// Minimum delay
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
 					packet.getVl().getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + packet.getEgressNode().getName());
+			attribute = attribute.replace("YY", packet.getEgressNode().getName());
 			packet.getVl().getRoute().setAttribute(attribute, packet.getMinimumLatencyInMs() + "");
 
 			// Jitter
-			attribute = AFDXParameters.ATT_VL_JITTER.replace("XX",
+			attribute = AFDXParameters.ATT_VL_DST_JITTER.replace("XX",
 					packet.getVl().getRoute().getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+			attribute = attribute.replace("YY", packet.getEgressNode().getName());
 			packet.getVl().getRoute().setAttribute(attribute, packet.getLastJitter() + "");
 		} else {
 			// Latency
 			attribute = AFDXParameters.ATT_VL_DST_DELAY.replace("XX",
 					packet.getVl().getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + packet.getEgressNode().getName());
+			attribute = attribute.replace("YY", packet.getEgressNode().getName());
 			packet.getVl().getTree().setAttribute(prefix + attribute, packet.getLastLatency() + "");
 
 			// Minimum delay
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
 					packet.getVl().getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + packet.getEgressNode().getName());
+			attribute = attribute.replace("YY", packet.getEgressNode().getName());
 			packet.getVl().getTree().setAttribute(attribute, packet.getMinimumLatencyInMs() + "");
 
 			// Jitter
-			attribute = AFDXParameters.ATT_VL_JITTER.replace("XX",
+			attribute = AFDXParameters.ATT_VL_DST_JITTER.replace("XX",
 					packet.getVl().getTree().getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+			attribute = attribute.replace("YY", packet.getEgressNode().getName());
 			packet.getVl().getTree().setAttribute(attribute, packet.getLastJitter() + "");
 		}
 

@@ -49,11 +49,13 @@ public class AFDXBasicSimulator extends IEventGenerator {
 	private List<LinkedList<Packet>> routeVLRegulatorQueue;
 	private List<Double> routeNextServiceTimeVLRegulator;
 	private List<SummaryStatistics> statsRoute;
+	private List<Double> jitterRoute;
 
 	// for each tree, a list of pending packets to be regulated
 	private List<LinkedList<Packet>> treeVLRegulatorQueue;
 	private List<Double> nextServiceTimePerVLTreeRegulator;
 	private List<List<SummaryStatistics>> statsTree;
+	private List<Double> jitterTree;
 
 	private List<LinkedList<Packet>> linkQueue;
 	private List<Double> linkNextServiceTime;
@@ -104,24 +106,31 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 			net2plan.setAttribute(attribute, routesCounter + "");
 
+			// Jitter maximum
+			attribute = AFDXParameters.ATT_VL_DST_JITTER.replace("XX",
+					net2plan.getRoute(index).getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+			attribute = attribute.replace("YY", net2plan.getRoute(index).getEgressNode().getName());
+
+			net2plan.getRoute(index).setAttribute(prefix + attribute, jitterRoute.get(index) + "");
+
 			// Latency minimum
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
 					net2plan.getRoute(index).getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + net2plan.getRoute(index).getEgressNode().getName());
+			attribute = attribute.replace("YY", net2plan.getRoute(index).getEgressNode().getName());
 
 			net2plan.getRoute(index).setAttribute(prefix + attribute, min + "");
 
-			// Latency minimum
+			// Latency mean
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MEAN.replace("XX",
 					net2plan.getRoute(index).getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + net2plan.getRoute(index).getEgressNode().getName());
+			attribute = attribute.replace("YY", net2plan.getRoute(index).getEgressNode().getName());
 
 			net2plan.getRoute(index).setAttribute(prefix + attribute, mean + "");
 
-			// Latency minimum
+			// Latency Maximum
 			attribute = AFDXParameters.ATT_VL_DST_DELAY_MAX.replace("XX",
 					net2plan.getRoute(index).getDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-			attribute = attribute.replace("YY", "" + net2plan.getRoute(index).getEgressNode().getName());
+			attribute = attribute.replace("YY", net2plan.getRoute(index).getEgressNode().getName());
 
 			net2plan.getRoute(index).setAttribute(prefix + attribute, max + "");
 
@@ -155,24 +164,31 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 				net2plan.setAttribute(attribute, treeDestinationCounter + "");
 
+				// Jitter maximum
+				attribute = AFDXParameters.ATT_VL_DST_JITTER.replace("XX",
+						net2plan.getMulticastTree(index).getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
+				attribute = attribute.replace("YY", egressNode.getName());
+
+				net2plan.getMulticastTree(index).setAttribute(prefix + attribute, jitterTree.get(index) + "");
+
 				// Latency minimum
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MIN.replace("XX",
 						net2plan.getMulticastTree(index).getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-				attribute = attribute.replace("YY", "" + egressNode.getName());
+				attribute = attribute.replace("YY", egressNode.getName());
 
 				net2plan.getMulticastTree(index).setAttribute(prefix + attribute, min + "");
 
-				// Latency minimum
+				// Latency mean
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MEAN.replace("XX",
 						net2plan.getMulticastTree(index).getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-				attribute = attribute.replace("YY", "" + egressNode.getName());
+				attribute = attribute.replace("YY", egressNode.getName());
 
 				net2plan.getMulticastTree(index).setAttribute(prefix + attribute, mean + "");
 
-				// Latency minimum
+				// Latency maximum
 				attribute = AFDXParameters.ATT_VL_DST_DELAY_MAX.replace("XX",
 						net2plan.getMulticastTree(index).getMulticastDemand().getAttribute(AFDXParameters.ATT_VL_ID));
-				attribute = attribute.replace("YY", "" + egressNode.getName());
+				attribute = attribute.replace("YY", egressNode.getName());
 
 				net2plan.getMulticastTree(index).setAttribute(prefix + attribute, max + "");
 			}
@@ -198,6 +214,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 		this.routeVLRegulatorQueue = new ArrayList<LinkedList<Packet>>();
 		for (Route r : currentNetPlan.getRoutes())
 			routeVLRegulatorQueue.add(new LinkedList<Packet>());
+		this.jitterRoute = new ArrayList<Double>();
 		this.routeNextServiceTimeVLRegulator = new ArrayList<Double>();
 		statsRoute = new ArrayList<SummaryStatistics>();
 
@@ -226,6 +243,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 			this.scheduleEvent(new SimEvent(generationTime, SimEvent.DestinationModule.EVENT_GENERATOR, 0, packet));
 
 			// reset the next service time for VL at regulators
+			jitterRoute.add(new Double(0));
 			routeNextServiceTimeVLRegulator.add(new Double(0));
 			statsRoute.add(new SummaryStatistics());
 		}
@@ -236,6 +254,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 		this.treeVLRegulatorQueue = new ArrayList<LinkedList<Packet>>();
 		for (MulticastTree t : currentNetPlan.getMulticastTrees())
 			treeVLRegulatorQueue.add(new LinkedList<Packet>());
+		this.jitterTree = new ArrayList<Double>();
 		this.nextServiceTimePerVLTreeRegulator = new ArrayList<Double>();
 		statsTree = new ArrayList<>();
 
@@ -256,6 +275,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 			this.scheduleEvent(new SimEvent(generationTime, SimEvent.DestinationModule.EVENT_GENERATOR, 0, packet));
 
 			// reset the next service time for VL at regulators
+			jitterTree.add(new Double(0));
 			nextServiceTimePerVLTreeRegulator.add(new Double(0));
 			statsTree.add(new ArrayList<SummaryStatistics>());
 			for (Node n : tree.getEgressNodes()) {
@@ -344,10 +364,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 					linkQueue.get(packet.getPreviousLink().getIndex()).remove(pos);
 					if (packet.getPreviousLink().getIndex() == testLink)
-						System.out.println("\t" + AFDXTools.df_5.format(simTime * 1000) + " -------->link queue "
-								+ linkQueue.get(packet.getPreviousLink().getIndex()).size() + " Route "
-								+ packet.getVl().getRoute().getIndex() + " nextservicetime "
-								+ linkNextServiceTime.get(packet.getPreviousLink().getIndex()));
+						printLinkStatus(simTime, packet);
 				}
 
 				double TechnologyLatency = 0;
@@ -456,10 +473,7 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 					linkQueue.get(packet.getPreviousLink().getIndex()).remove(pos);
 					if (packet.getPreviousLink().getIndex() == testLink)
-						System.out.println("\t" + AFDXTools.df_5.format(simTime * 1000) + " -------->link queue "
-								+ linkQueue.get(packet.getPreviousLink().getIndex()).size() + " Tree "
-								+ packet.getVl().getTree().getIndex() + " nextservicetime "
-								+ linkNextServiceTime.get(packet.getPreviousLink().getIndex()));
+						printLinkStatus(simTime, packet);
 				}
 
 				double TechnologyLatency = 0;
@@ -519,6 +533,24 @@ public class AFDXBasicSimulator extends IEventGenerator {
 	private void sendPacketThroughLink(double simTime, Packet packet, Link link) {
 		Packet packetCopy = packet.copy();
 
+		if (packetCopy.getArrivalNodes().size() == 1) {
+			double jitter;
+			if (simTime < linkNextServiceTime.get(link.getIndex()))
+				jitter = 1000 * linkNextServiceTime.get(link.getIndex()) - packetCopy.getArrivalTimesToNodes().get(0)
+						- AFDXParameters.TLTxInMs;
+			else
+				jitter = 1000 * simTime - packetCopy.getArrivalTimesToNodes().get(0) - AFDXParameters.TLTxInMs;
+			packetCopy.setLastJitter(jitter);
+
+			if (packetCopy.getVl().getRoute() != null) {
+				if (jitter > jitterRoute.get(packetCopy.getVl().getRoute().getIndex()))
+					jitterRoute.set(packetCopy.getVl().getRoute().getIndex(), jitter);
+			} else {
+				if (jitter > jitterTree.get(packetCopy.getVl().getTree().getIndex()))
+					jitterTree.set(packetCopy.getVl().getTree().getIndex(), jitter);
+			}
+		}
+
 		packetCopy.setTechnologyLatencyWaiting(true);
 
 		packetCopy.setPreviousLink(link);
@@ -537,14 +569,10 @@ public class AFDXBasicSimulator extends IEventGenerator {
 
 		try {
 			if (link.getIndex() == testLink) {
-				System.out.println(AFDXTools.df_5.format(simTime * 1000) + "--------> link queue "
-						+ linkQueue.get(link.getIndex()).size() + " Route " + packet.getVl().getRoute().getIndex()
-						+ " nextservicetime " + linkNextServiceTime.get(link.getIndex()));
+				printLinkStatus(simTime, packetCopy, link);
 			}
 		} catch (Exception e) {
-			System.out.println(AFDXTools.df_5.format(simTime * 1000) + "--------> link queue "
-					+ linkQueue.get(link.getIndex()).size() + " Tree " + packet.getVl().getTree().getIndex()
-					+ " nextservicetime " + linkNextServiceTime.get(link.getIndex()));
+			printLinkStatus(simTime, packetCopy, link);
 		}
 	}
 
@@ -582,6 +610,32 @@ public class AFDXBasicSimulator extends IEventGenerator {
 		serviceTime = 8 * AFDXParameters.IFGBytes / link.getCapacity();
 
 		return serviceTime;
+	}
+
+	private void printLinkStatus(double simTime, Packet packet) {
+		if (packet.getVl().getRoute() != null)
+			System.out.println("\t" + AFDXTools.df_5.format(simTime * 1000) + " -------->link queue "
+					+ linkQueue.get(packet.getPreviousLink().getIndex()).size() + " Route "
+					+ packet.getVl().getRoute().getIndex() + " nextservicetime "
+					+ AFDXTools.df_5.format(linkNextServiceTime.get(packet.getPreviousLink().getIndex()) * 1000));
+		else
+			System.out.println("\t" + AFDXTools.df_5.format(simTime * 1000) + " -------->link queue "
+					+ linkQueue.get(packet.getPreviousLink().getIndex()).size() + " Tree "
+					+ packet.getVl().getTree().getIndex() + " nextservicetime "
+					+ AFDXTools.df_5.format(linkNextServiceTime.get(packet.getPreviousLink().getIndex()) * 1000));
+
+	}
+
+	private void printLinkStatus(double simTime, Packet packet, Link link) {
+		if (packet.getVl().getRoute() != null)
+			System.out.println(AFDXTools.df_5.format(simTime * 1000) + "--------> link queue "
+					+ linkQueue.get(link.getIndex()).size() + " Route " + packet.getVl().getRoute().getIndex()
+					+ " nextservicetime " + AFDXTools.df_5.format(linkNextServiceTime.get(link.getIndex()) * 1000));
+		else
+			System.out.println(AFDXTools.df_5.format(simTime * 1000) + "--------> link queue "
+					+ linkQueue.get(link.getIndex()).size() + " Tree " + packet.getVl().getTree().getIndex()
+					+ " nextservicetime " + AFDXTools.df_5.format(linkNextServiceTime.get(link.getIndex()) * 1000));
+
 	}
 
 }
