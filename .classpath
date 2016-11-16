@@ -11,5 +11,7 @@
 	<classpathentry kind="lib" path="libs/colt-1.2.0.jar"/>
 	<classpathentry kind="lib" path="libs/jfreechart-1.0.19.jar"/>
 	<classpathentry kind="lib" path="libs/jcommon-1.0.23.jar"/>
+	<classpathentry kind="lib" path="libs/jom-0.2.0.1.jar"/>
+	<classpathentry kind="lib" path="libs/parallelcolt-0.9.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

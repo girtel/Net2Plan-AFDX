@@ -82,6 +82,25 @@ public class AFDXBasicSimulator extends IEventGenerator {
 	public String finish(StringBuilder output, double simTime) {
 		System.out.println("Simulation finished");
 
+		// SimTime
+		String attribute = AFDXParameters.ATT_SIM_TIME;
+
+		net2plan.setAttribute(attribute, simTime + "");
+
+		// Route counter
+		attribute = AFDXParameters.ATT_SIM_ROUTE_COUNTER;
+
+		net2plan.setAttribute(attribute, routesCounter + "");
+
+		// Route counter
+		attribute = AFDXParameters.ATT_SIM_TREE_COUNTER;
+
+		net2plan.setAttribute(attribute, treesCounter + "");
+
+		attribute = AFDXParameters.ATT_SIM_TREE_DESTINATION_COUNTER;
+
+		net2plan.setAttribute(attribute, treeDestinationCounter + "");
+
 		int index = 0;
 		for (SummaryStatistics summaryStatistics : statsRoute) {
 			double max = summaryStatistics.getMax();
@@ -95,16 +114,6 @@ public class AFDXBasicSimulator extends IEventGenerator {
 			// + df_3.format(min) + "\tMean Latency=\t" + df_3.format(mean) +
 			// "\tMax latency=\t"
 			// + df_3.format(max));
-
-			// SimTime
-			String attribute = AFDXParameters.ATT_SIM_TIME;
-
-			net2plan.setAttribute(attribute, simTime + "");
-
-			// Route counter
-			attribute = AFDXParameters.ATT_SIM_ROUTE_COUNTER;
-
-			net2plan.setAttribute(attribute, routesCounter + "");
 
 			// Jitter maximum
 			attribute = AFDXParameters.ATT_VL_DST_JITTER.replace("XX",
@@ -154,15 +163,6 @@ public class AFDXBasicSimulator extends IEventGenerator {
 				// df_3.format(min)
 				// + "\tMean Latency=\t" + df_3.format(mean) + "\tMax
 				// latency=\t" + df_3.format(max));
-
-				// Route counter
-				String attribute = AFDXParameters.ATT_SIM_TREE_COUNTER;
-
-				net2plan.setAttribute(attribute, treesCounter + "");
-
-				attribute = AFDXParameters.ATT_SIM_TREE_DESTINATION_COUNTER;
-
-				net2plan.setAttribute(attribute, treeDestinationCounter + "");
 
 				// Jitter maximum
 				attribute = AFDXParameters.ATT_VL_DST_JITTER.replace("XX",

@@ -236,18 +236,15 @@ public class AFDXReport implements IReport {
 		out.append("<h2>Simulation information</h2>");
 		try {
 			out.append("<p>This network and configuration table has been simulated for "
-					+ AFDXTools.df_3.format(netPlan.getAttribute(AFDXParameters.ATT_SIM_TIME))
-					+ " ms. During this time the simulator has generated the following number of packets</p>");
+					+ AFDXTools.df_5.format(Double.parseDouble(netPlan.getAttribute(AFDXParameters.ATT_SIM_TIME)))
+					+ " seconds. During this time the simulator has generated the following number of packets</p>");
 
 		} catch (Exception e) {
 		}
 		out.append("<table border='1'>");
-		try {
-			out.append("<tr><th align=\"left\"><b>Simulation time (ms)</b></th><th>"
-					+ AFDXTools.df_3.format(netPlan.getAttribute(AFDXParameters.ATT_SIM_TIME)) + "</th></tr>");
-
-		} catch (Exception e) {
-		}
+		out.append("<tr><th align=\"left\"><b>Simulated time (seconds)</b></th><th>"
+				+ AFDXTools.df_5.format(Double.parseDouble(netPlan.getAttribute(AFDXParameters.ATT_SIM_TIME)))
+				+ "</th></tr>");
 		out.append("<tr><th align=\"left\"><b>Unicast Packets</b></th><th>"
 				+ netPlan.getAttribute(AFDXParameters.ATT_SIM_ROUTE_COUNTER) + "</th></tr>");
 		out.append("<tr><th align=\"left\"><b>Multicast Packets</b></th><th>"
